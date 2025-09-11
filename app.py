@@ -154,52 +154,37 @@ st.dataframe(
 
 st.markdown("---")
 
-# --- Gráfico Receita x Despesa (substituído para barras agrupadas) ---
+# --- Novo Gráfico: Despesa vs Limites (linha + marcadores) ---
 st.subheader("📊 Despesa com Pessoal vs Limites")
 
-desp_df = pd.DataFrame({
-    "Cenário": ["Atual", "Simulado"],
-    "Despesa": [desp["Atual"], desp["Simulado"]]
-})
+fig_line = go.Figure()
 
-fig_bar = go.Figure()
-
-# Barras da despesa
-fig_bar.add_trace(go.Bar(
-    x=desp_df["Cenário"],
-    y=desp_df["Despesa"],
-    name="Despesa com Pessoal",
-    marker_color=["blue", "orange"]
+fig_line.add_trace(go.Scatter(
+    x=["Atual", "Simulado"],
+    y=[desp["Atual"], desp["Simulado"]],
+    mode="lines+markers+text",
+    text=[fmt_r(desp["Atual"]), fmt_r(desp["Simulado"])],
+    textposition="top center",
+    line=dict(color="royalblue"),
+    marker=dict(size=12, color=["blue", "orange"]),
+    name="Despesa com Pessoal"
 ))
 
-# Linhas horizontais dos limites (cenário simulado)
-fig_bar.add_hline(
-    y=lim_sim[0],
-    line=dict(color="red", dash="dash"),
-    annotation_text="Limite Máximo (Simulado)",
-    annotation_position="top left"
-)
-fig_bar.add_hline(
-    y=lim_sim[1],
-    line=dict(color="orange", dash="dot"),
-    annotation_text="Limite Prudencial (Simulado)",
-    annotation_position="top left"
-)
-fig_bar.add_hline(
-    y=lim_sim[2],
-    line=dict(color="green", dash="dot"),
-    annotation_text="Limite Alerta (Simulado)",
-    annotation_position="top left"
-)
+# Linhas horizontais dos limites (do cenário simulado)
+fig_line.add_hline(y=lim_sim[0], line=dict(color="red", dash="dash"),
+                   annotation_text="Limite Máx (Simulado)")
+fig_line.add_hline(y=lim_sim[1], line=dict(color="orange", dash="dot"),
+                   annotation_text="Limite Prud (Simulado)")
+fig_line.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"),
+                   annotation_text="Limite Alerta (Simulado)")
 
-fig_bar.update_layout(
+fig_line.update_layout(
     yaxis_title="R$ (reais)",
     height=420,
-    plot_bgcolor="white",
-    showlegend=False
+    plot_bgcolor="white"
 )
 
-st.plotly_chart(fig_bar, use_container_width=True)
+st.plotly_chart(fig_line, use_container_width=True)
 
 # --- Tabela Distância até os Limites (última seção) ---
 st.markdown("---")
