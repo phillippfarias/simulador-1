@@ -139,19 +139,18 @@ fig_g = go.Figure(go.Indicator(
 ))
 st.plotly_chart(fig_g, use_container_width=True)
 
-# --- Tabela de Ajustes Necessários ---
-if sim_type != "Nenhuma":
-    st.subheader("🔧 Ajustes Necessários (Cenário Simulado)")
-    df_adj = adjustments_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor)
-    st.dataframe(
-        df_adj.style.format({
-            "Reduzir Despesa (R$)": fmt_r,
-            "Reduzir Despesa (%)": "{:.2f}%",
-            "Aumentar Receita (R$)": fmt_r,
-            "Aumentar Receita (%)": "{:.2f}%"
-        }),
-        use_container_width=True
-    )
+# --- Tabela de Ajustes Necessários (sempre visível) ---
+st.subheader("🔧 Ajustes Necessários (Cenário Simulado)")
+df_adj = adjustments_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor)
+st.dataframe(
+    df_adj.style.format({
+        "Reduzir Despesa (R$)": fmt_r,
+        "Reduzir Despesa (%)": "{:.2f}%",
+        "Aumentar Receita (R$)": fmt_r,
+        "Aumentar Receita (%)": "{:.2f}%"
+    }),
+    use_container_width=True
+)
 
 st.markdown("---")
 
@@ -211,5 +210,3 @@ st.dataframe(
     }),
     use_container_width=True
 )
-
-
