@@ -42,19 +42,45 @@ def compute_adjustments(rcl, desp, max_pct, prud_factor, alert_factor):
         }
     return res
 
+def adjustments_table(rcl, desp, max_pct, prud_factor, alert_factor):
+    rows = []
+    names = ["Máximo", "Prudencial", "Alerta"]
+    factors = [1.0, prud_factor, alert_factor]
+    for name, f in zip(names, factors):
+        limite = rcl * max_pct * f
+        if desp > limite:
+            reduce_R = desp - limite
+            reduce_pct = (reduce_R / desp * 100) if desp else np.nan
+        else:
+            reduce_R = 0.0
+            reduce_pct = 0.0
+        denom = max_pct * f
+        if denom > 0:
+            rcl_needed = desp / denom
+            rcl_increase_R = max(0.0, rcl_needed - rcl)
+            rcl_increase_pct = (rcl_increase_R / rcl * 100) if rcl else np.nan
+        else:
+            rcl_increase_R = np.nan
+            rcl_increase_pct = np.nan
+        rows.append({
+            "Limite": name,
+            "Reduzir Despesa (R$)": reduce_R,
+            "Reduzir Despesa (%)": reduce_pct,
+            "Aumentar Receita (R$)": rcl_increase_R,
+            "Aumentar Receita (%)": rcl_increase_pct
+        })
+    return pd.DataFrame(rows)
+
 # --- Sidebar (Entradas) ---
 st.sidebar.header("⚙️ Entradas e Simulações")
 
-# RCL e despesa atuais
 rcl_atual = st.sidebar.number_input("RCL ajustada (Atual) (R$)", value=36273923688.14, format="%.2f", min_value=0.0)
 desp_atual = st.sidebar.number_input("Despesa com Pessoal (Atual) (R$)", value=15127218477.20, format="%.2f", min_value=0.0)
 
-# Limites
 max_pct = st.sidebar.slider("Limite Máximo (% RCL)", 0.0, 1.0, 0.49, 0.01, format="%.2f")
 prud_factor = st.sidebar.slider("Fator Prudencial", 0.0, 1.0, 0.95, 0.01)
 alert_factor = st.sidebar.slider("Fator Alerta", 0.0, 1.0, 0.90, 0.01)
 
-# Simulação
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎯 Simulação (Cenário Simulado)")
 
@@ -71,7 +97,6 @@ sim_val = st.sidebar.number_input("Valor da simulação (percentual ou R$)", val
 rcl = {"Atual": rcl_atual, "Simulado": rcl_atual}
 desp = {"Atual": desp_atual, "Simulado": desp_atual}
 
-# aplica simulação
 if sim_type == "Aumento despesa (%)":
     desp["Simulado"] = desp_atual * (1 + sim_val/100.0)
 elif sim_type == "Aumento despesa (R$)":
@@ -93,41 +118,7 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Tabela de Distância até os Limites ---
-st.header("📌 Distância até os Limites")
-
-def dist_table(rcl, desp, limites, nome):
-    ajustes = compute_adjustments(rcl, desp, max_pct, prud_factor, alert_factor)
-    data = []
-    for lim in ["Máximo", "Prudencial", "Alerta"]:
-        d = ajustes[lim]
-        data.append({
-            "Cenário": nome,
-            "Limite": lim,
-            "Limite (R$)": d["limite"],
-            "Despesa (R$)": desp,
-            "Falta para atingir (R$)": d["falta_r"],
-            "Falta para atingir (%)": d["falta_pct"]
-        })
-    return pd.DataFrame(data)
-
-df_atual = dist_table(rcl["Atual"], desp["Atual"], lim_atual, "Atual")
-df_sim = dist_table(rcl["Simulado"], desp["Simulado"], lim_sim, "Simulado")
-df_dist = pd.concat([df_atual, df_sim], ignore_index=True)
-
-st.dataframe(
-    df_dist.style.format({
-        "Limite (R$)": fmt_r,
-        "Despesa (R$)": fmt_r,
-        "Falta para atingir (R$)": fmt_r,
-        "Falta para atingir (%)": "{:.2f}%"
-    }),
-    use_container_width=True
-)
-
-st.markdown("---")
-
-# --- Gráfico Gauge ---
+# --- Gauge logo após o título ---
 pct_atual = (desp["Atual"] / lim_atual[0] * 100) if lim_atual[0] else np.nan
 pct_sim = (desp["Simulado"] / lim_sim[0] * 100) if lim_sim[0] else np.nan
 
@@ -147,6 +138,22 @@ fig_g = go.Figure(go.Indicator(
     }
 ))
 st.plotly_chart(fig_g, use_container_width=True)
+
+# --- Tabela de Ajustes Necessários ---
+if sim_type != "Nenhuma":
+    st.subheader("🔧 Ajustes Necessários (Cenário Simulado)")
+    df_adj = adjustments_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor)
+    st.dataframe(
+        df_adj.style.format({
+            "Reduzir Despesa (R$)": fmt_r,
+            "Reduzir Despesa (%)": "{:.2f}%",
+            "Aumentar Receita (R$)": fmt_r,
+            "Aumentar Receita (%)": "{:.2f}%"
+        }),
+        use_container_width=True
+    )
+
+st.markdown("---")
 
 # --- Gráfico Receita x Despesa ---
 fig_sc = go.Figure()
@@ -171,4 +178,38 @@ fig_sc.update_layout(
     plot_bgcolor="white"
 )
 st.plotly_chart(fig_sc, use_container_width=True)
+
+# --- Tabela Distância até os Limites (última seção) ---
+st.markdown("---")
+st.subheader("📋 Distância até os Limites")
+
+def dist_table(rcl, desp, max_pct, prud_factor, alert_factor, nome):
+    ajustes = compute_adjustments(rcl, desp, max_pct, prud_factor, alert_factor)
+    data = []
+    for lim in ["Máximo", "Prudencial", "Alerta"]:
+        d = ajustes[lim]
+        data.append({
+            "Cenário": nome,
+            "Limite": lim,
+            "Limite (R$)": d["limite"],
+            "Despesa (R$)": desp,
+            "Falta para atingir (R$)": d["falta_r"],
+            "Falta para atingir (%)": d["falta_pct"]
+        })
+    return pd.DataFrame(data)
+
+df_atual = dist_table(rcl["Atual"], desp["Atual"], max_pct, prud_factor, alert_factor, "Atual")
+df_sim = dist_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor, "Simulado")
+df_dist = pd.concat([df_atual, df_sim], ignore_index=True)
+
+st.dataframe(
+    df_dist.style.format({
+        "Limite (R$)": fmt_r,
+        "Despesa (R$)": fmt_r,
+        "Falta para atingir (R$)": fmt_r,
+        "Falta para atingir (%)": "{:.2f}%"
+    }),
+    use_container_width=True
+)
+
 
