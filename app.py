@@ -154,29 +154,52 @@ st.dataframe(
 
 st.markdown("---")
 
-# --- Gráfico Receita x Despesa ---
-fig_sc = go.Figure()
-fig_sc.add_trace(go.Scatter(
-    x=[rcl["Atual"]], y=[desp["Atual"]],
-    mode="markers+text", text=["Atual"],
-    textposition="top center", marker=dict(size=12, color="blue"), name="Atual"
+# --- Gráfico Receita x Despesa (substituído para barras agrupadas) ---
+st.subheader("📊 Despesa com Pessoal vs Limites")
+
+desp_df = pd.DataFrame({
+    "Cenário": ["Atual", "Simulado"],
+    "Despesa": [desp["Atual"], desp["Simulado"]]
+})
+
+fig_bar = go.Figure()
+
+# Barras da despesa
+fig_bar.add_trace(go.Bar(
+    x=desp_df["Cenário"],
+    y=desp_df["Despesa"],
+    name="Despesa com Pessoal",
+    marker_color=["blue", "orange"]
 ))
-fig_sc.add_trace(go.Scatter(
-    x=[rcl["Simulado"]], y=[desp["Simulado"]],
-    mode="markers+text", text=["Simulado"],
-    textposition="top center", marker=dict(size=12, color="orange"), name="Simulado"
-))
-fig_sc.add_hline(y=lim_sim[0], line=dict(color="red", dash="dash"), annotation_text="Limite Máx (Simulado)")
-fig_sc.add_hline(y=lim_sim[1], line=dict(color="orange", dash="dot"), annotation_text="Limite Prud (Simulado)")
-fig_sc.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"), annotation_text="Limite Alerta (Simulado)")
-fig_sc.update_layout(
-    title="Receita x Despesa",
-    xaxis_title="RCL Ajustada (R$)",
-    yaxis_title="Despesa com Pessoal (R$)",
-    height=420,
-    plot_bgcolor="white"
+
+# Linhas horizontais dos limites (cenário simulado)
+fig_bar.add_hline(
+    y=lim_sim[0],
+    line=dict(color="red", dash="dash"),
+    annotation_text="Limite Máximo (Simulado)",
+    annotation_position="top left"
 )
-st.plotly_chart(fig_sc, use_container_width=True)
+fig_bar.add_hline(
+    y=lim_sim[1],
+    line=dict(color="orange", dash="dot"),
+    annotation_text="Limite Prudencial (Simulado)",
+    annotation_position="top left"
+)
+fig_bar.add_hline(
+    y=lim_sim[2],
+    line=dict(color="green", dash="dot"),
+    annotation_text="Limite Alerta (Simulado)",
+    annotation_position="top left"
+)
+
+fig_bar.update_layout(
+    yaxis_title="R$ (reais)",
+    height=420,
+    plot_bgcolor="white",
+    showlegend=False
+)
+
+st.plotly_chart(fig_bar, use_container_width=True)
 
 # --- Tabela Distância até os Limites (última seção) ---
 st.markdown("---")
