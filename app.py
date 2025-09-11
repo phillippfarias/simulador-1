@@ -4,51 +4,11 @@ import numpy as np
 import plotly.graph_objects as go
 import io
 
-# Configuração inicial com ícone e layout
-st.set_page_config(
-    page_title="Simulador de Despesa com Pessoal (LRF)",
-    layout="wide",
-    page_icon="📊",
-)
-
-# 🎨 CSS customizado para aplicar tema branco, verde e laranja
-st.markdown("""
-    <style>
-        /* Fundo principal */
-        .stApp {
-            background-color: #FFFFFF;
-            color: #333333;
-        }
-
-        /* Sidebar */
-        section[data-testid="stSidebar"] {
-            background-color: #F4F4F4;
-        }
-
-        /* Botões */
-        div.stButton>button {
-            background-color: #00843D;
-            color: white;
-            border-radius: 8px;
-        }
-
-        /* Títulos */
-        h1, h2, h3 {
-            color: #E87722; /* Laranja */
-        }
-
-        /* Tabelas */
-        .stDataFrame, .stTable {
-            border: 1px solid #00843D;
-            border-radius: 6px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-# Título
+# Configuração inicial
+st.set_page_config(page_title="Simulador de Despesa com Pessoal (LRF)", layout="wide")
 st.title("📊 Simulador de Despesa com Pessoal (LRF) - Limites Máximo/Prudencial/Alerta")
 
-# --- Funções auxiliares ---
+# Funções auxiliares
 def fmt_r(x):
     try:
         return f"R$ {x:,.2f}"
@@ -149,11 +109,11 @@ fig_g = go.Figure(go.Indicator(
     title={'text': "Simulado % do Limite Máximo"},
     gauge={
         'axis': {'range': [0, 120]},
-        'bar': {'color': "#E87722"},  # Laranja
+        'bar': {'color': "orange"},
         'steps': [
-            {'range': [0, 90], 'color': "#DFF5E1"},   # Verde claro
-            {'range': [90, 95], 'color': "#FFF3CD"},  # Amarelo claro
-            {'range': [95, 120], 'color': "#F8D7DA"}  # Vermelho claro
+            {'range': [0, 90], 'color': "lightgreen"},
+            {'range': [90, 95], 'color': "yellow"},
+            {'range': [95, 120], 'color': "red"}
         ]
     }
 ))
@@ -177,8 +137,28 @@ for nome in ["Máximo","Prudencial","Alerta"]:
 df_adj = pd.DataFrame(rows)
 st.table(df_adj.style.format({"Limite": str}))
 
-# --- Distância até os limites ---
 st.markdown("---")
+
+# --- Dashboards ---
+st.header("📊 Dashboards — Atual vs Simulado")
+
+# Receita x Despesa (linhas, mais fácil de comparar)
+fig_sc = go.Figure()
+fig_sc.add_trace(go.Scatter(x=["Atual","Simulado"], y=[desp["atual"], desp["sim"]],
+                            mode="lines+markers+text", text=["Atual","Simulado"],
+                            textposition="top center", marker=dict(size=12), name="Despesa"))
+fig_sc.add_trace(go.Scatter(x=["Atual","Simulado"], y=[lim_atual[0], lim_sim[0]],
+                            mode="lines+markers", name="Limite Máximo", line=dict(color="red", dash="dash")))
+fig_sc.add_trace(go.Scatter(x=["Atual","Simulado"], y=[lim_atual[1], lim_sim[1]],
+                            mode="lines+markers", name="Limite Prudencial", line=dict(color="orange", dash="dot")))
+fig_sc.add_trace(go.Scatter(x=["Atual","Simulado"], y=[lim_atual[2], lim_sim[2]],
+                            mode="lines+markers", name="Limite Alerta", line=dict(color="green", dash="dot")))
+fig_sc.update_layout(title="Receita x Despesa (Atual vs Simulado)",
+                     xaxis_title="Cenário", yaxis_title="R$",
+                     height=420)
+st.plotly_chart(fig_sc, use_container_width=True)
+
+# --- Distância até os limites ---
 st.header("📋 Distância até os limites")
 rows = []
 for key, (Lm, Lp, La) in {"Atual": lim_atual, "Simulado": lim_sim}.items():
