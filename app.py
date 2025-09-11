@@ -10,28 +10,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Injetando CSS para customizar tema (Cores: Branco, Verde, Laranja)
-st.markdown("""
-    <style>
-        body {
-            background-color: #FFFFFF;
-            color: #000000;
-        }
-        .stApp {
-            background-color: #FFFFFF;
-        }
-        header, .stSidebar {
-            background-color: #008000; /* Verde */
-        }
-        .st-bf, .st-af {
-            background-color: #FFA500 !important; /* Laranja */
-        }
-        h1, h2, h3 {
-            color: #008000; /* Verde nos títulos */
-        }
-    </style>
-""", unsafe_allow_html=True)
-
 # Título
 st.title("📊 Simulador de Despesa com Pessoal (LRF) - Limites Máximo/Prudencial/Alerta")
 
@@ -162,5 +140,95 @@ for nome in ["Máximo","Prudencial","Alerta"]:
 df_adj = pd.DataFrame(rows)
 st.table(df_adj)
 
-# --- Dashboards e Tabela final mantidos iguais ---
-# (coloque aqui o restante da sua aplicação anterior, sem mudanças)
+# Dashboards
+st.header("📊 Dashboards — Atual vs Simulado")
+
+# Limites
+lim_df = pd.DataFrame({
+    "Limite": ["Máximo","Prudencial","Alerta"],
+    "Atual": list(lim_atual),
+    "Simulado": list(lim_sim)
+})
+fig_lim = go.Figure()
+fig_lim.add_trace(go.Bar(x=lim_df["Atual"], y=lim_df["Limite"], orientation='h', name="Atual", marker=dict(color="lightgray")))
+fig_lim.add_trace(go.Bar(x=lim_df["Simulado"], y=lim_df["Limite"], orientation='h', name="Simulado", marker=dict(color="darkgray")))
+fig_lim.update_layout(height=320, barmode='group', xaxis_title="R$ (reais)")
+st.plotly_chart(fig_lim, use_container_width=True)
+
+# Despesa
+desp_df = pd.DataFrame({
+    "Cenário": ["Atual","Simulado"],
+    "Despesa": [desp["atual"], desp["sim"]]
+})
+fig_d = go.Figure()
+fig_d.add_trace(go.Bar(x=desp_df["Cenário"], y=desp_df["Despesa"], marker_color=["blue","orange"]))
+fig_d.update_layout(height=260, yaxis_title="R$ (reais)")
+st.plotly_chart(fig_d, use_container_width=True)
+
+# Margens
+margens = {
+    "Limite": ["Máx","Prud","Alerta"],
+    "Margem_Atual": [lim_atual[0]-desp["atual"], lim_atual[1]-desp["atual"], lim_atual[2]-desp["atual"]],
+    "Margem_Sim": [lim_sim[0]-desp["sim"], lim_sim[1]-desp["sim"], lim_sim[2]-desp["sim"]]
+}
+marg_df = pd.DataFrame(margens)
+fig_m = go.Figure()
+fig_m.add_trace(go.Bar(y=marg_df["Limite"], x=marg_df["Margem_Atual"], orientation='h', name="Margem Atual", marker=dict(color="lightblue")))
+fig_m.add_trace(go.Bar(y=marg_df["Limite"], x=marg_df["Margem_Sim"], orientation='h', name="Margem Simulado", marker=dict(color="lightcoral")))
+fig_m.update_layout(barmode='group', height=320, xaxis_title="Margem (R$)")
+st.plotly_chart(fig_m, use_container_width=True)
+
+# Receita x Despesa (scatter)
+fig_sc = go.Figure()
+fig_sc.add_trace(go.Scatter(x=[rcl["atual"]], y=[desp["atual"]], mode="markers+text", text=["Atual"], textposition="top center", marker=dict(size=12, color="blue"), name="Atual"))
+fig_sc.add_trace(go.Scatter(x=[rcl["sim"]], y=[desp["sim"]], mode="markers+text", text=["Simulado"], textposition="top center", marker=dict(size=12, color="orange"), name="Simulado"))
+fig_sc.add_hline(y=lim_sim[0], line=dict(color="red", dash="dash"), annotation_text="Limite Máx (Simulado)", annotation_position="bottom right")
+fig_sc.add_hline(y=lim_sim[1], line=dict(color="orange", dash="dot"), annotation_text="Limite Prud (Simulado)", annotation_position="bottom right")
+fig_sc.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"), annotation_text="Limite Alerta (Simulado)", annotation_position="bottom right")
+fig_sc.update_layout(title="Receita x Despesa (pontos Atual & Simulado)", xaxis_title="RCL Ajustada (R$)", yaxis_title="Despesa com Pessoal (R$)", height=420)
+st.plotly_chart(fig_sc, use_container_width=True)
+
+# Tabela detalhada
+st.header("📋 Tabela detalhada (Atual / Simulado)")
+rows = []
+for key in ["Atual","Simulado"]:
+    Lm, Lp, La = lim_atual if key=="Atual" else lim_sim
+    D = desp[key.lower()]
+    rows.append({
+        "Cenário": key,
+        "RCL ajustada (R$)": rcl[key.lower()],
+        "Despesa Pessoal (R$)": D,
+        "Limite Máx (R$)": Lm,
+        "Limite Prud (R$)": Lp,
+        "Limite Alerta (R$)": La,
+        "Margem Máx (R$)": Lm - D,
+        "Margem Prud (R$)": Lp - D,
+        "Margem Alerta (R$)": La - D,
+        "% Ocup Máx": (D / Lm * 100) if Lm else np.nan,
+        "% Ocup Prud": (D / Lp * 100) if Lp else np.nan,
+        "% Ocup Alerta": (D / La * 100) if La else np.nan,
+    })
+table_df = pd.DataFrame(rows)
+fmt_cols = {
+    "RCL ajustada (R$)": "{:,.2f}",
+    "Despesa Pessoal (R$)": "{:,.2f}",
+    "Limite Máx (R$)": "{:,.2f}",
+    "Limite Prud (R$)": "{:,.2f}",
+    "Limite Alerta (R$)": "{:,.2f}",
+    "Margem Máx (R$)": "{:,.2f}",
+    "Margem Prud (R$)": "{:,.2f}",
+    "Margem Alerta (R$)": "{:,.2f}",
+    "% Ocup Máx": "{:.2f}%",
+    "% Ocup Prud": "{:.2f}%",
+    "% Ocup Alerta": "{:.2f}%"
+}
+st.dataframe(table_df.style.format(fmt_cols), height=220)
+
+# Exportar
+st.markdown("---")
+st.subheader("📥 Exportar tabela")
+csv_buf = io.StringIO()
+table_df.to_csv(csv_buf, index=False, sep=";")
+st.download_button("Baixar CSV (Detalhado)", csv_buf.getvalue().encode("utf-8"), file_name="margens_detalhado.csv", mime="text/csv")
+
+st.caption("Notas: 'Atual' = situação atual; 'Simulado' = após aplicação da simulação escolhida. Ajustes apresentados são sugestões para que a despesa passe a respeitar cada limite.")
