@@ -123,7 +123,7 @@ fig_g = go.Figure(go.Indicator(
 fig_g.update_layout(height=300)
 st.plotly_chart(fig_g, use_container_width=True)
 
-# Ajustes necessários
+# Ajustes necessários sempre visíveis
 st.markdown("### 🔧 Ajustes Necessários (Cenário Simulado)")
 rows = []
 for nome in ["Máximo","Prudencial","Alerta"]:
