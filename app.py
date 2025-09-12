@@ -154,11 +154,9 @@ st.dataframe(
 
 st.markdown("---")
 
-# --- Novo Gráfico: Despesa vs Limites (linha + marcadores) ---
+# --- Novo Gráfico: Despesa vs Limites ---
 st.subheader("📊 Despesa com Pessoal vs Limites")
-
 fig_line = go.Figure()
-
 fig_line.add_trace(go.Scatter(
     x=["Atual", "Simulado"],
     y=[desp["Atual"], desp["Simulado"]],
@@ -169,24 +167,13 @@ fig_line.add_trace(go.Scatter(
     marker=dict(size=12, color=["blue", "orange"]),
     name="Despesa com Pessoal"
 ))
-
-# Linhas horizontais dos limites (do cenário simulado)
-fig_line.add_hline(y=lim_sim[0], line=dict(color="red", dash="dash"),
-                   annotation_text="Limite Máx (Simulado)")
-fig_line.add_hline(y=lim_sim[1], line=dict(color="orange", dash="dot"),
-                   annotation_text="Limite Prud (Simulado)")
-fig_line.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"),
-                   annotation_text="Limite Alerta (Simulado)")
-
-fig_line.update_layout(
-    yaxis_title="R$ (reais)",
-    height=420,
-    plot_bgcolor="white"
-)
-
+fig_line.add_hline(y=lim_sim[0], line=dict(color="red", dash="dash"), annotation_text="Limite Máx (Simulado)")
+fig_line.add_hline(y=lim_sim[1], line=dict(color="orange", dash="dot"), annotation_text="Limite Prud (Simulado)")
+fig_line.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"), annotation_text="Limite Alerta (Simulado)")
+fig_line.update_layout(yaxis_title="R$ (reais)", height=420, plot_bgcolor="white")
 st.plotly_chart(fig_line, use_container_width=True)
 
-# --- Tabela Distância até os Limites (última seção) ---
+# --- Distância até os Limites (duas tabelas separadas) ---
 st.markdown("---")
 st.subheader("📋 Distância até os Limites")
 
@@ -196,7 +183,6 @@ def dist_table(rcl, desp, max_pct, prud_factor, alert_factor, nome):
     for lim in ["Máximo", "Prudencial", "Alerta"]:
         d = ajustes[lim]
         data.append({
-            "Cenário": nome,
             "Limite": lim,
             "Limite (R$)": d["limite"],
             "Despesa (R$)": desp,
@@ -205,12 +191,24 @@ def dist_table(rcl, desp, max_pct, prud_factor, alert_factor, nome):
         })
     return pd.DataFrame(data)
 
+# Cenário Atual
+st.write("### Cenário Atual")
 df_atual = dist_table(rcl["Atual"], desp["Atual"], max_pct, prud_factor, alert_factor, "Atual")
-df_sim = dist_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor, "Simulado")
-df_dist = pd.concat([df_atual, df_sim], ignore_index=True)
-
 st.dataframe(
-    df_dist.style.format({
+    df_atual.style.format({
+        "Limite (R$)": fmt_r,
+        "Despesa (R$)": fmt_r,
+        "Falta para atingir (R$)": fmt_r,
+        "Falta para atingir (%)": "{:.2f}%"
+    }),
+    use_container_width=True
+)
+
+# Cenário Simulado
+st.write("### Cenário Simulado")
+df_sim = dist_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor, "Simulado")
+st.dataframe(
+    df_sim.style.format({
         "Limite (R$)": fmt_r,
         "Despesa (R$)": fmt_r,
         "Falta para atingir (R$)": fmt_r,
