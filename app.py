@@ -77,10 +77,9 @@ st.sidebar.header("⚙️ Entradas e Simulações")
 rcl_atual = st.sidebar.number_input("RCL ajustada (Atual) (R$)", value=36273923688.14, format="%.2f", min_value=0.0)
 desp_atual = st.sidebar.number_input("Despesa com Pessoal (Atual) (R$)", value=15127218477.20, format="%.2f", min_value=0.0)
 
-# Limite máximo definido como 49% da RCL
-max_pct = 0.49
-prud_factor = 0.95
-alert_factor = 0.90
+max_pct = st.sidebar.slider("Limite Máximo (% RCL)", 0.0, 1.0, 0.49, 0.01, format="%.2f")
+prud_factor = st.sidebar.slider("Fator Prudencial", 0.0, 1.0, 0.95, 0.01)
+alert_factor = st.sidebar.slider("Fator Alerta", 0.0, 1.0, 0.90, 0.01)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎯 Simulação (Cenário Simulado)")
@@ -120,14 +119,14 @@ lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
 # --- Gauge logo após o título ---
-pct_atual = (desp["Atual"] / (rcl["Atual"]*max_pct) * 100) if (rcl["Atual"]*max_pct) else np.nan
-pct_sim = (desp["Simulado"] / (rcl["Simulado"]*max_pct) * 100) if (rcl["Simulado"]*max_pct) else np.nan
+pct_atual = (desp["Atual"] / lim_atual[0] * 100) if lim_atual[0] else np.nan
+pct_sim = (desp["Simulado"] / lim_sim[0] * 100) if lim_sim[0] else np.nan
 
 fig_g = go.Figure(go.Indicator(
     mode="gauge+number+delta",
     value=pct_sim,
     delta={'reference': pct_atual},
-    title={'text': "Despesa como % do Teto Máx (49% da RCL)"},
+    title={'text': "Despesa como % do Limite Máximo"},
     gauge={
         'axis': {'range': [0, 120]},
         'bar': {'color': "royalblue"},
@@ -140,7 +139,7 @@ fig_g = go.Figure(go.Indicator(
 ))
 st.plotly_chart(fig_g, use_container_width=True)
 
-# --- Tabela de Ajustes Necessários ---
+# --- Tabela de Ajustes Necessários (sempre visível) ---
 st.subheader("🔧 Ajustes Necessários (Cenário Simulado)")
 df_adj = adjustments_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor)
 st.dataframe(
@@ -155,7 +154,7 @@ st.dataframe(
 
 st.markdown("---")
 
-# --- Gráfico: Despesa vs Limites ---
+# --- Novo Gráfico: Despesa vs Limites ---
 st.subheader("📊 Despesa com Pessoal vs Limites")
 fig_line = go.Figure()
 fig_line.add_trace(go.Scatter(
@@ -174,7 +173,7 @@ fig_line.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"), annotatio
 fig_line.update_layout(yaxis_title="R$ (reais)", height=420, plot_bgcolor="white")
 st.plotly_chart(fig_line, use_container_width=True)
 
-# --- Distância até os Limites ---
+# --- Distância até os Limites (duas tabelas separadas) ---
 st.markdown("---")
 st.subheader("📋 Distância até os Limites")
 
