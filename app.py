@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import io
 
 # --- Configuração geral ---
 st.set_page_config(
@@ -91,10 +92,7 @@ sim_type = st.sidebar.selectbox("Tipo de simulação", (
     "Aumento receita (%)", "Aumento receita (R$)",
     "Redução receita (%)", "Redução receita (R$)"
 ))
-
-# Input normal, mas exibindo valor formatado com separadores
 sim_val = st.sidebar.number_input("Valor da simulação (percentual ou R$)", value=0.0, format="%.2f")
-st.sidebar.markdown(f"**Valor digitado:** {sim_val:,.2f} R$")
 
 # --- Cálculos ---
 rcl = {"Atual": rcl_atual, "Simulado": rcl_atual}
@@ -121,7 +119,7 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Gauge em % da RCL ---
+# --- Gauge em % da RCL (visualização intuitiva) ---
 pct_atual = desp["Atual"] / rcl["Atual"] * 100
 pct_sim = desp["Simulado"] / rcl["Simulado"] * 100
 
