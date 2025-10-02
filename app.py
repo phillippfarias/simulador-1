@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import io
 
 # --- Configuração geral ---
 st.set_page_config(
@@ -74,18 +73,8 @@ def adjustments_table(rcl, desp, max_pct, prud_factor, alert_factor):
 # --- Sidebar (Entradas) ---
 st.sidebar.header("⚙️ Entradas e Simulações")
 
-rcl_atual = st.sidebar.number_input(
-    "RCL ajustada (Atual) (R$)",
-    value=36273923688.14,
-    format="%.2f",
-    min_value=0.0
-)
-desp_atual = st.sidebar.number_input(
-    "Despesa com Pessoal (Atual) (R$)",
-    value=15127218477.20,
-    format="%.2f",
-    min_value=0.0
-)
+rcl_atual = st.sidebar.number_input("RCL ajustada (Atual) (R$)", value=36273923688.14, format="%.2f", min_value=0.0)
+desp_atual = st.sidebar.number_input("Despesa com Pessoal (Atual) (R$)", value=15127218477.20, format="%.2f", min_value=0.0)
 
 # Limite máximo definido como 49% da RCL
 max_pct = 0.49
@@ -103,12 +92,9 @@ sim_type = st.sidebar.selectbox("Tipo de simulação", (
     "Redução receita (%)", "Redução receita (R$)"
 ))
 
-# Aqui a melhoria: separadores de milhar na digitação
-sim_val = st.sidebar.number_input(
-    "Valor da simulação (percentual ou R$)",
-    value=0.0,
-    format="%0,.2f"
-)
+# Input normal, mas exibindo valor formatado com separadores
+sim_val = st.sidebar.number_input("Valor da simulação (percentual ou R$)", value=0.0, format="%.2f")
+st.sidebar.markdown(f"**Valor digitado:** {sim_val:,.2f} R$")
 
 # --- Cálculos ---
 rcl = {"Atual": rcl_atual, "Simulado": rcl_atual}
@@ -135,13 +121,13 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Gauge em % da RCL (visualização intuitiva) ---
+# --- Gauge em % da RCL ---
 pct_atual = desp["Atual"] / rcl["Atual"] * 100
 pct_sim = desp["Simulado"] / rcl["Simulado"] * 100
 
 limite_alerta_pct = max_pct * alert_factor * 100  # 44,1%
 limite_prud_pct = max_pct * prud_factor * 100     # 46,55%
-limite_max_pct = max_pct * 100                    # 49%
+limite_max_pct = max_pct * 100                     # 49%
 
 fig_g = go.Figure(go.Indicator(
     mode="gauge+number+delta",
