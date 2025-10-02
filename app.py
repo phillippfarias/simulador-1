@@ -119,27 +119,31 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Gauge atualizado para 0 a 49% ---
-limite_alerta_val = rcl["Simulado"] * max_pct * alert_factor  # 44,1% da RCL
-limite_prud_val = rcl["Simulado"] * max_pct * prud_factor    # 46,55% da RCL
-limite_max_val = rcl["Simulado"] * max_pct                   # 49% da RCL
+# --- Gauge em % da RCL ---
+pct_atual = desp["Atual"] / rcl["Atual"] * 100
+pct_sim = desp["Simulado"] / rcl["Simulado"] * 100
+
+limite_alerta_pct = max_pct * alert_factor * 100  # 44,1%
+limite_prud_pct = max_pct * prud_factor * 100     # 46,55%
+limite_max_pct = max_pct * 100                     # 49%
 
 fig_g = go.Figure(go.Indicator(
-    mode="gauge+number",
-    value=desp["Simulado"],
-    title={'text': "Despesa com Pessoal (R$)"},
+    mode="gauge+number+delta",
+    value=pct_sim,
+    delta={'reference': pct_atual, 'relative': False},
+    title={'text': "Despesa como % da RCL"},
     gauge={
-        'axis': {'range': [0, rcl["Simulado"] * 0.6]},  # escala até 60% da RCL
+        'axis': {'range': [0, 60]},  # escala até 60% para visual
         'bar': {'color': "royalblue"},
         'steps': [
-            {'range': [0, limite_alerta_val], 'color': "#b6e3b6"},
-            {'range': [limite_alerta_val, limite_prud_val], 'color': "#ffe599"},
-            {'range': [limite_prud_val, limite_max_val], 'color': "#f4cccc"}
+            {'range': [0, limite_alerta_pct], 'color': "#b6e3b6"},
+            {'range': [limite_alerta_pct, limite_prud_pct], 'color': "#ffe599"},
+            {'range': [limite_prud_pct, limite_max_pct], 'color': "#f4cccc"}
         ],
         'threshold': {
             'line': {'color': "red", 'width': 4},
             'thickness': 0.75,
-            'value': limite_max_val
+            'value': limite_max_pct
         }
     }
 ))
