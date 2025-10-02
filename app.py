@@ -119,7 +119,7 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Gauge em % da RCL ---
+# --- Gauge em % da RCL (visualização intuitiva) ---
 pct_atual = desp["Atual"] / rcl["Atual"] * 100
 pct_sim = desp["Simulado"] / rcl["Simulado"] * 100
 
@@ -133,7 +133,7 @@ fig_g = go.Figure(go.Indicator(
     delta={'reference': pct_atual, 'relative': False},
     title={'text': "Despesa como % da RCL"},
     gauge={
-        'axis': {'range': [0, 60]},  # escala até 60% para visual
+        'axis': {'range': [0, 60], 'tickformat': ".1f"},
         'bar': {'color': "royalblue"},
         'steps': [
             {'range': [0, limite_alerta_pct], 'color': "#b6e3b6"},
@@ -145,7 +145,8 @@ fig_g = go.Figure(go.Indicator(
             'thickness': 0.75,
             'value': limite_max_pct
         }
-    }
+    },
+    number={'suffix': "%"}
 ))
 st.plotly_chart(fig_g, use_container_width=True)
 
