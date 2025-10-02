@@ -77,9 +77,10 @@ st.sidebar.header("⚙️ Entradas e Simulações")
 rcl_atual = st.sidebar.number_input("RCL ajustada (Atual) (R$)", value=36273923688.14, format="%.2f", min_value=0.0)
 desp_atual = st.sidebar.number_input("Despesa com Pessoal (Atual) (R$)", value=15127218477.20, format="%.2f", min_value=0.0)
 
-max_pct = st.sidebar.slider("Limite Máximo (% RCL)", 0.0, 1.0, 0.49, 0.01, format="%.2f")
-prud_factor = st.sidebar.slider("Fator Prudencial", 0.0, 1.0, 0.95, 0.01)
-alert_factor = st.sidebar.slider("Fator Alerta", 0.0, 1.0, 0.90, 0.01)
+# Limite máximo definido como 49% da RCL
+max_pct = 0.49
+prud_factor = 0.95
+alert_factor = 0.90
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎯 Simulação (Cenário Simulado)")
@@ -118,28 +119,33 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Gauge logo após o título ---
-pct_atual = (desp["Atual"] / lim_atual[0] * 100) if lim_atual[0] else np.nan
-pct_sim = (desp["Simulado"] / lim_sim[0] * 100) if lim_sim[0] else np.nan
+# --- Gauge atualizado para 0 a 49% ---
+limite_alerta_val = rcl["Simulado"] * max_pct * alert_factor  # 44,1% da RCL
+limite_prud_val = rcl["Simulado"] * max_pct * prud_factor    # 46,55% da RCL
+limite_max_val = rcl["Simulado"] * max_pct                   # 49% da RCL
 
 fig_g = go.Figure(go.Indicator(
-    mode="gauge+number+delta",
-    value=pct_sim,
-    delta={'reference': pct_atual},
-    title={'text': "Despesa como % do Limite Máximo"},
+    mode="gauge+number",
+    value=desp["Simulado"],
+    title={'text': "Despesa com Pessoal (R$)"},
     gauge={
-        'axis': {'range': [0, 120]},
+        'axis': {'range': [0, rcl["Simulado"] * 0.6]},  # escala até 60% da RCL
         'bar': {'color': "royalblue"},
         'steps': [
-            {'range': [0, 90], 'color': "#b6e3b6"},
-            {'range': [90, 95], 'color': "#ffe599"},
-            {'range': [95, 120], 'color': "#f4cccc"}
-        ]
+            {'range': [0, limite_alerta_val], 'color': "#b6e3b6"},
+            {'range': [limite_alerta_val, limite_prud_val], 'color': "#ffe599"},
+            {'range': [limite_prud_val, limite_max_val], 'color': "#f4cccc"}
+        ],
+        'threshold': {
+            'line': {'color': "red", 'width': 4},
+            'thickness': 0.75,
+            'value': limite_max_val
+        }
     }
 ))
 st.plotly_chart(fig_g, use_container_width=True)
 
-# --- Tabela de Ajustes Necessários (sempre visível) ---
+# --- Tabela de Ajustes Necessários ---
 st.subheader("🔧 Ajustes Necessários (Cenário Simulado)")
 df_adj = adjustments_table(rcl["Simulado"], desp["Simulado"], max_pct, prud_factor, alert_factor)
 st.dataframe(
@@ -154,7 +160,7 @@ st.dataframe(
 
 st.markdown("---")
 
-# --- Novo Gráfico: Despesa vs Limites ---
+# --- Gráfico: Despesa vs Limites ---
 st.subheader("📊 Despesa com Pessoal vs Limites")
 fig_line = go.Figure()
 fig_line.add_trace(go.Scatter(
@@ -173,7 +179,7 @@ fig_line.add_hline(y=lim_sim[2], line=dict(color="green", dash="dot"), annotatio
 fig_line.update_layout(yaxis_title="R$ (reais)", height=420, plot_bgcolor="white")
 st.plotly_chart(fig_line, use_container_width=True)
 
-# --- Distância até os Limites (duas tabelas separadas) ---
+# --- Distância até os Limites ---
 st.markdown("---")
 st.subheader("📋 Distância até os Limites")
 
