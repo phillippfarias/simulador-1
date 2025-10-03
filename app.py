@@ -94,9 +94,6 @@ sim_type = st.sidebar.selectbox("Tipo de simulação", (
 ))
 sim_val = st.sidebar.number_input("Valor da simulação (percentual ou R$)", value=0.0, format="%.2f")
 
-# Mostrar valor com separador de milhar
-st.sidebar.markdown(f"**Valor digitado:** {sim_val:,.2f}")
-
 # --- Cálculos ---
 rcl = {"Atual": rcl_atual, "Simulado": rcl_atual}
 desp = {"Atual": desp_atual, "Simulado": desp_atual}
@@ -122,13 +119,13 @@ elif sim_type == "Redução receita (R$)":
 lim_atual = calc_limits(rcl["Atual"], max_pct, prud_factor, alert_factor)
 lim_sim = calc_limits(rcl["Simulado"], max_pct, prud_factor, alert_factor)
 
-# --- Gauge em % da RCL com ponteiro ---
+# --- Gauge em % da RCL (visualização intuitiva) ---
 pct_atual = desp["Atual"] / rcl["Atual"] * 100
 pct_sim = desp["Simulado"] / rcl["Simulado"] * 100
 
 limite_alerta_pct = max_pct * alert_factor * 100  # 44,1%
 limite_prud_pct = max_pct * prud_factor * 100     # 46,55%
-limite_max_pct = max_pct * 100                    # 49%
+limite_max_pct = max_pct * 100                     # 49%
 
 fig_g = go.Figure(go.Indicator(
     mode="gauge+number+delta",
@@ -151,27 +148,6 @@ fig_g = go.Figure(go.Indicator(
     },
     number={'suffix': "%"}
 ))
-
-# --- Adicionando ponteiro (linha preta indicando o gasto) ---
-import math
-angle = (1 - pct_sim/60) * math.pi  # conversão para ângulo
-fig_g.add_shape(
-    type="line",
-    x0=0.5, y0=0.5,
-    x1=0.5 + 0.4*math.cos(angle),
-    y1=0.5 + 0.4*math.sin(angle),
-    xref="paper", yref="paper",
-    line=dict(color="black", width=4)
-)
-
-# Marcador na base do ponteiro
-fig_g.add_shape(
-    type="circle",
-    xref="paper", yref="paper",
-    x0=0.48, y0=0.48, x1=0.52, y1=0.52,
-    fillcolor="black", line_color="black"
-)
-
 st.plotly_chart(fig_g, use_container_width=True)
 
 # --- Tabela de Ajustes Necessários ---
