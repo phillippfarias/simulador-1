@@ -74,8 +74,8 @@ def adjustments_table(rcl, desp, max_pct, prud_factor, alert_factor):
 # --- Sidebar (Entradas) ---
 st.sidebar.header("⚙️ Entradas e Simulações")
 
-rcl_atual = st.sidebar.number_input("RCL ajustada (Atual) (R$)", value=36273923688.14, format="%.2f", min_value=0.0)
-desp_atual = st.sidebar.number_input("Despesa com Pessoal (Atual) (R$)", value=15127218477.20, format="%.2f", min_value=0.0)
+rcl_atual = st.sidebar.number_input("RCL ajustada (Atual) (R$)", value=38075255002.08, format="%.2f", min_value=0.0)
+desp_atual = st.sidebar.number_input("Despesa com Pessoal (Atual) (R$)", value=15834366368.11, format="%.2f", min_value=0.0)
 
 # Limite máximo definido como 49% da RCL
 max_pct = 0.49
